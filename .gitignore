@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+
+# Environment secrets
+.env
+*.env
+
+# Django
+db.sqlite3
+staticfiles/
+
+# Node
+node_modules/
+dist/
+
+# AI models
+*.pt
+*.onnx
+
+# Generated media/evidence
+media/evidence/
+media/screenshots/videos/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+backend/surveillance/migrations_backup/

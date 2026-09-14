@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+**/.env
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/dist
+backend/venv
+ai_engine/venv
+media/videos/*
+media/evidence/*
+*.pt
+*.mp4
+*.avi
+*.mov
