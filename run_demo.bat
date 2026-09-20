@@ -3,37 +3,46 @@ setlocal
 cd /d "%~dp0"
 
 echo ================================================
-echo BorderGuard AI - Judge Demo
+echo        BORDERGUARD AI - JUDGE DEMO
 echo ================================================
 echo.
-
-echo 1. Start Django backend in Terminal 1:
-echo    cd backend ^&^& venv\Scripts\activate ^&^& python manage.py runserver
-echo.
-echo 2. Start React command center in Terminal 2:
-echo    cd frontend ^&^& npm run dev
-echo.
-echo 3. This terminal will run the real YOLO demo loop.
+echo Starting backend, frontend and both AI cameras...
 echo.
 
-cd ai_engine
-if not exist venv\Scripts\python.exe (
-  echo ERROR: ai_engine virtual environment not found.
-  echo Create it with: python -m venv venv
-  pause
-  exit /b 1
-)
+REM ---------------- BACKEND ----------------
+start "BorderGuard Backend" cmd /k ^
+"cd /d "%~dp0backend" ^&^& venv\Scripts\activate ^&^& python manage.py runserver"
 
-venv\Scripts\python.exe demo_preflight.py --path ../media/videos/test.mp4
-if errorlevel 1 (
-  echo.
-  echo Preflight failed. Place the real test.mp4 clip in media\videos\ and ensure .env is configured.
-  pause
-  exit /b 1
-)
+timeout /t 3 /nobreak >nul
+
+REM ---------------- FRONTEND ----------------
+start "BorderGuard React" cmd /k ^
+"cd /d "%~dp0frontend" ^&^& npm run dev"
+
+timeout /t 5 /nobreak >nul
+
+REM ---------------- CAM-01 ----------------
+start "BorderGuard CAM-01" cmd /k ^
+"cd /d "%~dp0ai_engine" ^&^& venv\Scripts\activate ^&^& python video_processor.py --source video --path ..\media\screenshots\videos\test.mp4 --camera_id CAM-01 --stream_port 9000 --demo --loop"
+
+timeout /t 3 /nobreak >nul
+
+REM ---------------- CAM-02 ----------------
+start "BorderGuard CAM-02" cmd /k ^
+"cd /d "%~dp0ai_engine" ^&^& venv\Scripts\activate ^&^& python video_processor.py --source video --path ..\media\screenshots\videos\test2.mp4 --camera_id CAM-02 --stream_port 9001 --demo --loop"
 
 echo.
-echo Starting DEMO MODE. Press Q in the OpenCV window to stop.
+echo ================================================
+echo DEMO SERVICES STARTED
+echo ================================================
 echo.
-venv\Scripts\python.exe video_processor.py --source video --path ../media/videos/test.mp4 --camera_id CAM-01 --demo --loop
+echo Backend : http://127.0.0.1:8000
+echo Frontend: http://localhost:5173
+echo CAM-01  : http://127.0.0.1:9000/stream
+echo CAM-02  : http://127.0.0.1:9001/stream
+echo.
+echo Close the four opened terminals to stop the demo.
+echo.
+pause
+
 endlocal

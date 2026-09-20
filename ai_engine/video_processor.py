@@ -822,6 +822,7 @@ def main():
         else video_path
     )
 
+
     if not cap.isOpened():
 
         print(

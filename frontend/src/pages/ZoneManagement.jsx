@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import api from '../services/api'
 
-const STREAM_URL = 'http://127.0.0.1:9000/stream'
+const STREAM_URL_BASE = 'http://127.0.0.1'
 
 const emptyForm = {
   name: '',
@@ -32,11 +32,10 @@ export default function ZoneManagement() {
       setLoading(true)
       setError('')
 
-      const [zonesResponse, camerasResponse] =
-        await Promise.all([
-          api.get('/zones/'),
-          api.get('/cameras/'),
-        ])
+      const [zonesResponse, camerasResponse] = await Promise.all([
+        api.get('/zones/'),
+        api.get('/cameras/'),
+      ])
 
       setZones(zonesResponse.data)
       setCameras(camerasResponse.data)
@@ -70,6 +69,31 @@ export default function ZoneManagement() {
     setDrawing(false)
     setError('')
   }
+
+  /*
+   * Resolve the selected Django camera ID to the actual
+   * camera identifier such as CAM-01 / CAM-02.
+   */
+  const selectedCamera = cameras.find(
+    (camera) => String(camera.id) === String(form.camera)
+  )
+
+  /*
+   * CAM-01 -> 9000
+   * CAM-02 -> 9001
+   * CAM-03 -> 9002
+   */
+  const cameraNumber = selectedCamera
+    ? Number(
+        String(selectedCamera.camera_id).replace('CAM-', '')
+      ) || 1
+    : 1
+
+  const streamPort = 8999 + cameraNumber
+
+  const streamUrl = form.camera
+    ? `${STREAM_URL_BASE}:${streamPort}/stream`
+    : ''
 
   const normalizePoints = (points) => {
     const frame = frameRef.current
@@ -156,10 +180,7 @@ export default function ZoneManagement() {
       return
     }
 
-    const nextPoints = drawPoints.slice(
-      0,
-      -1
-    )
+    const nextPoints = drawPoints.slice(0, -1)
 
     setDrawPoints(nextPoints)
 
@@ -193,8 +214,7 @@ export default function ZoneManagement() {
       active_hours:
         zone.active_hours || '24x7',
       alert_threshold:
-        zone.alert_threshold ||
-        '1 person',
+        zone.alert_threshold || '1 person',
       is_active:
         Boolean(zone.is_active),
     })
@@ -210,11 +230,6 @@ export default function ZoneManagement() {
   const handleCameraChange = (value) => {
     updateField('camera', value)
 
-    /*
-     * Changing cameras starts a fresh drawing.
-     * The existing polygon is cleared so coordinates
-     * cannot accidentally belong to another camera.
-     */
     setDrawPoints([])
     setDrawing(false)
     updateField('polygon', '[]')
@@ -274,11 +289,9 @@ export default function ZoneManagement() {
       severity: form.severity,
       polygon,
       active_hours:
-        form.active_hours.trim() ||
-        '24x7',
+        form.active_hours.trim() || '24x7',
       alert_threshold:
-        form.alert_threshold.trim() ||
-        '1 person',
+        form.alert_threshold.trim() || '1 person',
       is_active: form.is_active,
     }
 
@@ -366,7 +379,7 @@ export default function ZoneManagement() {
       console.error(err)
 
       setError(
-        'Unable to delete security zone.'
+        'Unable to delete zone.'
       )
     }
   }
@@ -376,9 +389,7 @@ export default function ZoneManagement() {
       const parsed =
         JSON.parse(form.polygon)
 
-      if (
-        !Array.isArray(parsed)
-      ) {
+      if (!Array.isArray(parsed)) {
         return []
       }
 
@@ -417,19 +428,15 @@ export default function ZoneManagement() {
 
           <span className="panel-note">
             {zones.length} zone
-            {zones.length === 1
-              ? ''
-              : 's'}
+            {zones.length === 1 ? '' : 's'}
           </span>
 
         </div>
 
         <div
           style={{
-            padding:
-              '0 16px 16px',
-            color:
-              'var(--text-low)',
+            padding: '0 16px 16px',
+            color: 'var(--text-low)',
             fontSize: 12,
             lineHeight: 1.6,
           }}
@@ -465,9 +472,7 @@ export default function ZoneManagement() {
           {editingId && (
             <button
               className="btn-sm"
-              onClick={
-                resetForm
-              }
+              onClick={resetForm}
               type="button"
             >
               Cancel
@@ -493,9 +498,7 @@ export default function ZoneManagement() {
                 </span>
 
                 <input
-                  value={
-                    form.name
-                  }
+                  value={form.name}
                   onChange={(e) =>
                     updateField(
                       'name',
@@ -514,9 +517,7 @@ export default function ZoneManagement() {
                 </span>
 
                 <select
-                  value={
-                    form.camera
-                  }
+                  value={form.camera}
                   onChange={(e) =>
                     handleCameraChange(
                       e.target.value
@@ -530,20 +531,13 @@ export default function ZoneManagement() {
                   {cameras.map(
                     (camera) => (
                       <option
-                        key={
-                          camera.id
-                        }
-                        value={
-                          camera.id
-                        }
+                        key={camera.id}
+                        value={camera.id}
                       >
-                        {
-                          camera.camera_id
-                        }{' '}
+                        {camera.camera_id}
+                        {' '}
                         —{' '}
-                        {
-                          camera.location
-                        }
+                        {camera.location}
                       </option>
                     )
                   )}
@@ -558,9 +552,7 @@ export default function ZoneManagement() {
                 </span>
 
                 <select
-                  value={
-                    form.severity
-                  }
+                  value={form.severity}
                   onChange={(e) =>
                     updateField(
                       'severity',
@@ -568,21 +560,10 @@ export default function ZoneManagement() {
                     )
                   }
                 >
-                  <option>
-                    CRITICAL
-                  </option>
-
-                  <option>
-                    HIGH
-                  </option>
-
-                  <option>
-                    MEDIUM
-                  </option>
-
-                  <option>
-                    LOW
-                  </option>
+                  <option>CRITICAL</option>
+                  <option>HIGH</option>
+                  <option>MEDIUM</option>
+                  <option>LOW</option>
                 </select>
               </label>
             </div>
@@ -594,9 +575,7 @@ export default function ZoneManagement() {
                 </span>
 
                 <input
-                  value={
-                    form.active_hours
-                  }
+                  value={form.active_hours}
                   onChange={(e) =>
                     updateField(
                       'active_hours',
@@ -615,9 +594,7 @@ export default function ZoneManagement() {
                 </span>
 
                 <input
-                  value={
-                    form.alert_threshold
-                  }
+                  value={form.alert_threshold}
                   onChange={(e) =>
                     updateField(
                       'alert_threshold',
@@ -644,8 +621,7 @@ export default function ZoneManagement() {
                   onChange={(e) =>
                     updateField(
                       'is_active',
-                      e.target.value ===
-                        'ACTIVE'
+                      e.target.value === 'ACTIVE'
                     )
                   }
                 >
@@ -663,7 +639,7 @@ export default function ZoneManagement() {
           </div>
 
 
-          {/* VISUAL ZONE DRAWER */}
+          {/* VISUAL ZONE DRAWING */}
           <div
             style={{
               marginTop: 18,
@@ -678,8 +654,7 @@ export default function ZoneManagement() {
             <div
               style={{
                 display: 'flex',
-                justifyContent:
-                  'space-between',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 gap: 12,
                 marginBottom: 10,
@@ -693,8 +668,7 @@ export default function ZoneManagement() {
 
                 <h4
                   style={{
-                    margin:
-                      '4px 0 0',
+                    margin: '4px 0 0',
                   }}
                 >
                   Draw Restricted Area
@@ -711,9 +685,7 @@ export default function ZoneManagement() {
                 <button
                   type="button"
                   className="btn-sm"
-                  onClick={
-                    undoPoint
-                  }
+                  onClick={undoPoint}
                   disabled={
                     drawPoints.length === 0
                   }
@@ -724,9 +696,7 @@ export default function ZoneManagement() {
                 <button
                   type="button"
                   className="btn-sm"
-                  onClick={
-                    clearPolygon
-                  }
+                  onClick={clearPolygon}
                   disabled={
                     drawPoints.length === 0
                   }
@@ -764,6 +734,16 @@ export default function ZoneManagement() {
                       'var(--text-low)',
                   }}
                 >
+                  CAMERA:{' '}
+                  <b>
+                    {selectedCamera?.camera_id || '—'}
+                  </b>
+                  {' · '}
+                  STREAM PORT:{' '}
+                  <b>
+                    {streamPort}
+                  </b>
+                  <br />
                   CLICK 3 OR MORE POINTS ON
                   THE FRAME TO CREATE THE
                   POLYGON.
@@ -772,48 +752,37 @@ export default function ZoneManagement() {
 
                 {/* FRAME */}
                 <div
-                  ref={
-                    frameRef
-                  }
-                  onClick={
-                    handleFrameClick
-                  }
+                  ref={frameRef}
+                  onClick={handleFrameClick}
                   style={{
-                    position:
-                      'relative',
+                    position: 'relative',
                     width: '100%',
                     maxWidth: 900,
-                    margin:
-                      '0 auto',
-                    cursor:
-                      'crosshair',
-                    overflow:
-                      'hidden',
+                    margin: '0 auto',
+                    cursor: 'crosshair',
+                    overflow: 'hidden',
                     border:
                       '1px solid var(--border)',
-                    background:
-                      '#050505',
+                    background: '#050505',
                   }}
                 >
 
                   <img
-                    src={
-                      STREAM_URL
-                    }
-                    alt="AI surveillance stream"
+                    key={streamUrl}
+                    src={streamUrl}
+                    alt={`${selectedCamera?.camera_id || 'AI'} surveillance stream`}
                     style={{
-                      display:
-                        'block',
-                      width:
-                        '100%',
-                      height:
-                        'auto',
-                      minHeight:
-                        260,
-                      objectFit:
-                        'contain',
-                      pointerEvents:
-                        'none',
+                      display: 'block',
+                      width: '100%',
+                      height: 'auto',
+                      minHeight: 260,
+                      objectFit: 'contain',
+                      pointerEvents: 'none',
+                    }}
+                    onError={() => {
+                      setError(
+                        `Unable to load ${selectedCamera?.camera_id || 'camera'} stream at ${streamUrl}. Make sure its AI stream is running.`
+                      )
                     }}
                   />
 
@@ -823,15 +792,11 @@ export default function ZoneManagement() {
                     viewBox="0 0 1 1"
                     preserveAspectRatio="none"
                     style={{
-                      position:
-                        'absolute',
+                      position: 'absolute',
                       inset: 0,
-                      width:
-                        '100%',
-                      height:
-                        '100%',
-                      pointerEvents:
-                        'none',
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none',
                     }}
                   >
 
@@ -873,12 +838,8 @@ export default function ZoneManagement() {
                       (point, index) => (
                         <circle
                           key={index}
-                          cx={
-                            point.x
-                          }
-                          cy={
-                            point.y
-                          }
+                          cx={point.x}
+                          cy={point.y}
                           r="0.014"
                           fill="#ffffff"
                           stroke="#ff4646"
@@ -897,8 +858,7 @@ export default function ZoneManagement() {
                 <div
                   style={{
                     display: 'flex',
-                    justifyContent:
-                      'space-between',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
                     gap: 10,
                     marginTop: 10,
@@ -914,23 +874,19 @@ export default function ZoneManagement() {
                   >
                     POINTS:{' '}
                     <b>
-                      {
-                        normalizedPolygon.length
-                      }
+                      {normalizedPolygon.length}
                     </b>
                   </span>
 
                   <span
                     style={{
                       color:
-                        normalizedPolygon.length >=
-                        3
+                        normalizedPolygon.length >= 3
                           ? 'var(--ok)'
                           : 'var(--text-low)',
                     }}
                   >
-                    {normalizedPolygon.length >=
-                    3
+                    {normalizedPolygon.length >= 3
                       ? 'POLYGON READY'
                       : 'ADD AT LEAST 3 POINTS'}
                   </span>
@@ -957,19 +913,13 @@ export default function ZoneManagement() {
               </span>
 
               <textarea
-                value={
-                  form.polygon
-                }
+                value={form.polygon}
                 onChange={(e) => {
                   updateField(
                     'polygon',
                     e.target.value
                   )
 
-                  /*
-                   * Allow manual JSON editing
-                   * as a fallback.
-                   */
                   try {
                     const parsed =
                       JSON.parse(
@@ -977,14 +927,10 @@ export default function ZoneManagement() {
                       )
 
                     if (
-                      Array.isArray(
-                        parsed
-                      )
+                      Array.isArray(parsed)
                     ) {
                       setDrawPoints([])
-                      setDrawing(
-                        false
-                      )
+                      setDrawing(false)
                     }
                   } catch {
                     // Keep manual text unchanged.
@@ -1063,9 +1009,7 @@ export default function ZoneManagement() {
               <button
                 className="btn-sm"
                 type="button"
-                onClick={
-                  resetForm
-                }
+                onClick={resetForm}
               >
                 Cancel
               </button>
@@ -1099,8 +1043,7 @@ export default function ZoneManagement() {
                 (zone) =>
                   zone.is_active
               ).length
-            }{' '}
-            active
+            } active
           </span>
 
         </div>
@@ -1141,9 +1084,7 @@ export default function ZoneManagement() {
               (zone) => (
 
                 <div
-                  key={
-                    zone.id
-                  }
+                  key={zone.id}
                   className="intel-card"
                   style={{
                     marginBottom: 8,
@@ -1152,12 +1093,9 @@ export default function ZoneManagement() {
 
                   <div
                     style={{
-                      display:
-                        'flex',
-                      justifyContent:
-                        'space-between',
-                      alignItems:
-                        'flex-start',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
                       gap: 12,
                     }}
                   >
@@ -1166,26 +1104,20 @@ export default function ZoneManagement() {
 
                       <div
                         style={{
-                          display:
-                            'flex',
-                          alignItems:
-                            'center',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: 8,
                         }}
                       >
 
                         <b>
-                          {
-                            zone.name
-                          }
+                          {zone.name}
                         </b>
 
                         <span
                           className={`sev-pill ${zone.severity}`}
                         >
-                          {
-                            zone.severity
-                          }
+                          {zone.severity}
                         </span>
 
                       </div>
@@ -1231,11 +1163,9 @@ export default function ZoneManagement() {
                         <span>
                           STATUS{' '}
                           <b>
-                            {
-                              zone.is_active
-                                ? 'ACTIVE'
-                                : 'INACTIVE'
-                            }
+                            {zone.is_active
+                              ? 'ACTIVE'
+                              : 'INACTIVE'}
                           </b>
                         </span>
 
@@ -1246,8 +1176,7 @@ export default function ZoneManagement() {
 
                     <div
                       style={{
-                        display:
-                          'flex',
+                        display: 'flex',
                         gap: 6,
                         flexShrink: 0,
                       }}
@@ -1256,9 +1185,7 @@ export default function ZoneManagement() {
                       <button
                         className="btn-sm"
                         onClick={() =>
-                          startEdit(
-                            zone
-                          )
+                          startEdit(zone)
                         }
                       >
                         Edit
@@ -1267,9 +1194,7 @@ export default function ZoneManagement() {
                       <button
                         className="btn-sm"
                         onClick={() =>
-                          toggleZone(
-                            zone
-                          )
+                          toggleZone(zone)
                         }
                       >
                         {zone.is_active
@@ -1280,9 +1205,7 @@ export default function ZoneManagement() {
                       <button
                         className="btn-sm"
                         onClick={() =>
-                          deleteZone(
-                            zone
-                          )
+                          deleteZone(zone)
                         }
                       >
                         Delete
