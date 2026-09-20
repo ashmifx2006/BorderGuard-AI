@@ -4,7 +4,9 @@ export default function CameraPanel({ camera, latestAlert }) {
   const online = camera.status === 'ONLINE'
   const score = latestAlert?.risk_score || 0
 
-  const streamUrl = `http://127.0.0.1:9000/stream`
+  const cameraNumber = Number(String(camera.camera_id).replace('CAM-', '')) || 1
+const streamPort = 8999 + cameraNumber
+const streamUrl = `http://127.0.0.1:${streamPort}/stream`
   return (
     <div className="cam-panel">
       <div className="cam-feed">

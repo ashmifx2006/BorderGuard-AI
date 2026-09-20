@@ -797,6 +797,12 @@ def main():
         "--camera_id",
         default="CAM-01",
     )
+    parser.add_argument(
+    "--stream_port",
+    type=int,
+    default=9000,
+    help="HTTP MJPEG stream port for this camera",
+)
 
     args = parser.parse_args()
 
@@ -924,7 +930,7 @@ def main():
     # START ANNOTATED STREAM SERVER
     # ========================================================
 
-    stream_server = start_annotated_stream_server()
+    stream_server = start_annotated_stream_server(port=args.stream_port)
 
     print(
         "[video_processor] Running on "
@@ -943,7 +949,7 @@ def main():
 
     print(
         "[video_processor] Browser stream: "
-        "http://127.0.0.1:9000/stream"
+        f"http://127.0.0.1:{args.stream_port}/stream"
     )
 
     # ========================================================

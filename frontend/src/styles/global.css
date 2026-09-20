@@ -47,6 +47,12 @@ button{font-family:inherit;cursor:pointer;}
 .cam-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px 16px;}
 .cam-panel{background:var(--bg-inset);border:1px solid var(--border-soft);border-radius:7px;overflow:hidden;}
 .cam-feed{position:relative;aspect-ratio:16/10;background:linear-gradient(160deg,#131c2a,#0a1018);display:flex;align-items:center;justify-content:center;}
+.camera-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .live-tag{position:absolute;top:8px;left:8px;display:flex;gap:5px;align-items:center;background:rgba(8,11,18,.75);padding:3px 7px;border-radius:4px;font-size:10px;font-weight:700;}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--crit);}
 .cam-info{padding:9px 11px;}
