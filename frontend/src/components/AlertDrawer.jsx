@@ -2,8 +2,15 @@ import React, { useState } from 'react'
 import api from '../services/api'
 import RiskBadge from './RiskBadge.jsx'
 
-export default function AlertDrawer({ alert, onClose, onStatus }) {
-  const [notes, setNotes] = useState(alert?.analyst_notes || '')
+export default function AlertDrawer({
+  alert,
+  onClose,
+  onStatus,
+}) {
+  const [notes, setNotes] = useState(
+    alert?.analyst_notes || ''
+  )
+
   const [integrity, setIntegrity] = useState(null)
 
   if (!alert) return null
@@ -13,7 +20,11 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
     : []
 
   const saveStatus = (status) => {
-    onStatus(alert.id, status, notes)
+    onStatus(
+      alert.id,
+      status,
+      notes
+    )
   }
 
   const verify = async () => {
@@ -21,43 +32,85 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
       const r = await api.get(
         `/alerts/${alert.id}/verify-integrity/`
       )
+
       setIntegrity(r.data)
-    } catch {
-      setIntegrity({ verified: false })
+    } catch (error) {
+      console.error(
+        'Integrity verification failed:',
+        error
+      )
+
+      setIntegrity({
+        verified: false,
+      })
     }
   }
 
+  /*
+   * Generate the real PDF report.
+   *
+   * IMPORTANT:
+   * responseType: 'blob' prevents Axios from
+   * treating the PDF as JSON/text.
+   */
   const report = async () => {
     try {
       const r = await api.get(
-        `/alerts/${alert.id}/incident-report/`
+        `/alerts/${alert.id}/incident-report/`,
+        {
+          responseType: 'blob',
+        }
       )
 
       const blob = new Blob(
-        [JSON.stringify(r.data, null, 2)],
-        { type: 'application/json' }
+        [r.data],
+        {
+          type: 'application/pdf',
+        }
       )
 
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      const url =
+        URL.createObjectURL(blob)
+
+      const a =
+        document.createElement('a')
 
       a.href = url
-      a.download = `BorderGuard-AL-${alert.id}-report.json`
+
+      a.download =
+        `BorderGuard-AL-${alert.id}-incident-report.pdf`
+
+      document.body.appendChild(a)
+
       a.click()
 
+      a.remove()
+
       URL.revokeObjectURL(url)
-    } catch {}
+    } catch (error) {
+      console.error(
+        'Incident report generation failed:',
+        error
+      )
+    }
   }
 
-  const eventName = String(alert.event_type || 'UNKNOWN')
-    .replaceAll('_', ' ')
+  const eventName = String(
+    alert.event_type || 'UNKNOWN'
+  ).replaceAll('_', ' ')
 
-  const riskScore = Number(alert.risk_score || 0)
+  const riskScore =
+    Number(alert.risk_score || 0)
 
-  const riskWidth = `${Math.min(100, Math.max(0, riskScore))}%`
+  const riskWidth =
+    `${Math.min(
+      100,
+      Math.max(0, riskScore)
+    )}%`
 
   const severityClass =
-    alert.severity?.toLowerCase() || 'medium'
+    alert.severity?.toLowerCase() ||
+    'medium'
 
   return (
     <div
@@ -66,12 +119,16 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
     >
       <aside
         className="alert-drawer"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) =>
+          e.stopPropagation()
+        }
       >
 
         {/* HEADER */}
         <div className="drawer-head">
+
           <div>
+
             <span className="eyebrow">
               INCIDENT DETAIL
             </span>
@@ -79,6 +136,7 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
             <h2>
               AL-{alert.id}
             </h2>
+
           </div>
 
           <button
@@ -87,6 +145,7 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
           >
             ×
           </button>
+
         </div>
 
 
@@ -107,21 +166,33 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
               'Rule-based event detected from measurable video activity.'}
           </p>
 
+
           {/* RISK METER */}
           <div className="risk-meter-wrap">
+
             <div className="risk-meter-label">
-              <span>RISK SCORE</span>
+
+              <span>
+                RISK SCORE
+              </span>
+
               <strong>
                 {riskScore}/100
               </strong>
+
             </div>
 
             <div className="risk-meter">
+
               <div
                 className={`risk-meter-fill ${severityClass}`}
-                style={{ width: riskWidth }}
+                style={{
+                  width: riskWidth,
+                }}
               />
+
             </div>
+
           </div>
 
         </div>
@@ -137,47 +208,90 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
           <div className="intelligence-grid">
 
             <div className="intel-card">
-              <span>EVENT</span>
-              <b>{eventName}</b>
-            </div>
 
-            <div className="intel-card">
-              <span>RISK LEVEL</span>
+              <span>
+                EVENT
+              </span>
+
               <b>
-                {alert.risk_level || 'NORMAL'}
+                {eventName}
               </b>
+
             </div>
 
+
             <div className="intel-card">
-              <span>MOVEMENT</span>
+
+              <span>
+                RISK LEVEL
+              </span>
+
+              <b>
+                {alert.risk_level ||
+                  'NORMAL'}
+              </b>
+
+            </div>
+
+
+            <div className="intel-card">
+
+              <span>
+                MOVEMENT
+              </span>
+
               <b>
                 {alert.movement_speed
-                  ? `${Number(alert.movement_speed).toFixed(1)} px/s`
+                  ? `${Number(
+                      alert.movement_speed
+                    ).toFixed(1)} px/s`
                   : '—'}
               </b>
+
             </div>
 
+
             <div className="intel-card">
-              <span>DWELL TIME</span>
+
+              <span>
+                DWELL TIME
+              </span>
+
               <b>
-                {Number(alert.dwell_seconds || 0).toFixed(1)}s
+                {Number(
+                  alert.dwell_seconds || 0
+                ).toFixed(1)}s
               </b>
+
             </div>
 
+
             <div className="intel-card">
-              <span>TRACK ID</span>
+
+              <span>
+                TRACK ID
+              </span>
+
               <b>
                 {alert.track_id || '—'}
               </b>
+
             </div>
 
+
             <div className="intel-card">
-              <span>CONFIDENCE</span>
+
+              <span>
+                CONFIDENCE
+              </span>
+
               <b>
                 {Math.round(
-                  (alert.confidence || 0) * 100
+                  (alert.confidence || 0) *
+                    100
                 )}%
               </b>
+
             </div>
 
           </div>
@@ -189,49 +303,85 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
         <div className="detail-grid">
 
           <div>
-            <span>CAMERA</span>
+
+            <span>
+              CAMERA
+            </span>
+
             <b>
               {alert.camera_display}
             </b>
+
           </div>
 
+
           <div>
-            <span>LOCATION</span>
+
+            <span>
+              LOCATION
+            </span>
+
             <b>
               {alert.location}
             </b>
+
           </div>
 
+
           <div>
-            <span>OBJECT</span>
+
+            <span>
+              OBJECT
+            </span>
+
             <b>
               {alert.object_type}
             </b>
+
           </div>
 
+
           <div>
-            <span>CONFIDENCE</span>
+
+            <span>
+              CONFIDENCE
+            </span>
+
             <b>
               {Math.round(
-                (alert.confidence || 0) * 100
+                (alert.confidence || 0) *
+                  100
               )}%
             </b>
+
           </div>
 
+
           <div>
-            <span>DWELL</span>
+
+            <span>
+              DWELL
+            </span>
+
             <b>
               {Number(
                 alert.dwell_seconds || 0
               ).toFixed(1)}s
             </b>
+
           </div>
 
+
           <div>
-            <span>TRACK</span>
+
+            <span>
+              TRACK
+            </span>
+
             <b>
               {alert.track_id || '—'}
             </b>
+
           </div>
 
         </div>
@@ -245,23 +395,35 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
           </span>
 
           {factors.length ? (
-            <ul className="factor-list">
-              {factors.map((factor, index) => (
-                <li key={index}>
-                  <span className="factor-marker">
-                    +
-                  </span>
 
-                  <span>
-                    {factor}
-                  </span>
-                </li>
-              ))}
+            <ul className="factor-list">
+
+              {factors.map(
+                (factor, index) => (
+
+                  <li key={index}>
+
+                    <span className="factor-marker">
+                      +
+                    </span>
+
+                    <span>
+                      {factor}
+                    </span>
+
+                  </li>
+
+                )
+              )}
+
             </ul>
+
           ) : (
+
             <p>
               No additional risk factors recorded.
             </p>
+
           )}
 
         </div>
@@ -269,6 +431,7 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
 
         {/* EVIDENCE */}
         {alert.evidence_image && (
+
           <div className="drawer-section">
 
             <span className="eyebrow">
@@ -281,15 +444,20 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
               alt="Alert evidence"
             />
 
+
             <button
               className="btn-sm primary"
-              style={{ marginTop: 8 }}
+              style={{
+                marginTop: 8,
+              }}
               onClick={verify}
             >
               Verify Integrity
             </button>
 
+
             {integrity && (
+
               <div className="integrity-box">
 
                 {integrity.verified
@@ -299,16 +467,24 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
                 <br />
 
                 <span className="mono">
+
                   SHA-256:{' '}
-                  {(integrity.evidence_sha256 || '')
-                    .slice(0, 16)}
+
+                  {(
+                    integrity.evidence_sha256 ||
+                    ''
+                  ).slice(0, 16)}
+
                   …
+
                 </span>
 
               </div>
+
             )}
 
           </div>
+
         )}
 
 
@@ -341,7 +517,9 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
             Generate Incident Report
           </button>
 
+
           {alert.status === 'New' && (
+
             <button
               className="btn"
               onClick={() =>
@@ -350,9 +528,13 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
             >
               Acknowledge
             </button>
+
           )}
 
-          {alert.status === 'Acknowledged' && (
+
+          {alert.status ===
+            'Acknowledged' && (
+
             <button
               className="btn"
               onClick={() =>
@@ -361,9 +543,13 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
             >
               Start Investigation
             </button>
+
           )}
 
-          {alert.status === 'Investigating' && (
+
+          {alert.status ===
+            'Investigating' && (
+
             <button
               className="btn accent"
               onClick={() =>
@@ -372,11 +558,13 @@ export default function AlertDrawer({ alert, onClose, onStatus }) {
             >
               Resolve Incident
             </button>
+
           )}
 
         </div>
 
       </aside>
+
     </div>
   )
 }

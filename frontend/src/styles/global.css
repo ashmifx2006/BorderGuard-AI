@@ -220,3 +220,19 @@ td.id-cell{font-family:var(--font-mono);color:var(--text-hi);font-weight:600;}
     width: 96vw;
   }
 }
+/* Analytics metric card text layout */
+.metric-card span {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.metric-card b {
+  display: block;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.metric-card small {
+  display: block;
+  line-height: 1.4;
+}
